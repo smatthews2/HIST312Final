@@ -268,7 +268,7 @@
             bulb.position.set(0, -20, -10);
             spaceship.add(bulb);
 
-            body = new THREE.Mesh(new THREE.BoxGeometry(25, 25, 50), new THREE.MeshBasicMaterial({color: new THREE.Color("white")}));
+            body = new THREE.Mesh(new THREE.BoxGeometry(25, 25, 50), new THREE.MeshPhongMaterial({color: new THREE.Color("white")}));
             body.position.set(0, 0, -25);
             body.rotation.x += THREE.Math.degToRad(45);
             spaceship.add(body);
@@ -452,6 +452,19 @@
         scene.add(bezierCurve2);
         scene.add(bezierCurve3);
         scene.add(bezierCurve4);
+
+        var sunObj = new THREE.Object3D();
+        var sunLight = new THREE.PointLight(0xFFBF00, 1, 0);
+        sunLight.position.set(sunObj.position.x, sunObj.position.y, sunObj.position.z);
+        sunObj.add(sunLight);
+        scene.add(sunObj);
+
+        loader.load( 'sun.png', function ( texture ) {
+            var geometry = new THREE.SphereGeometry( 80, 20, 20 );
+            var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5 , color:0xFFBF00} );
+            var mesh = new THREE.Mesh( geometry, material );
+            sunObj.add( mesh );
+        });
 
         // keypress event listener
         document.addEventListener("keypress", (event) => {

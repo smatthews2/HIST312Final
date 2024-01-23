@@ -101,25 +101,7 @@
         function render() {
             // a render function; assume global variables scene, renderer, and camera
             requestAnimationFrame(render);
-            move();
-            rotate();
-
-            if(params.followSpaceship){
-                camera.position.set(spaceship.position.x, spaceship.position.y + 50, spaceship.position.z - 50);
-                camera.rotation.set(THREE.Math.degToRad(33), THREE.Math.degToRad(180) + spaceship.rotation.y, 0);
-            }
-
             renderer.render(scene, camera);
-        }
-        
-        // This function redraws the spaceship.
-        function redoSpaceship() {
-            var lastPosition = new THREE.Object3D();
-            lastPosition.position.copy(spaceship.position); //copy starting position to reset animation
-            scene.remove(spaceship);
-            spaceship = buildSpaceship();
-            spaceship.position.set(lastPosition.position.x, lastPosition.position.y, lastPosition.position.z)
-            scene.add(spaceship);
         }
 
         // This function moves the spaceship along the defined bezier curve.
@@ -133,11 +115,11 @@
                 let targetDirection = new THREE.Vector3(path[t].x, path[t].y, path[t].z);
 
                 let position = new THREE.Vector3(); //need a vector to store a position
-                spaceship.getWorldPosition(position); //get spaceship current position -- getWorldPosition requires target return object
+                earth.getWorldPosition(position); //get spaceship current position -- getWorldPosition requires target return object
                 let distance = position.distanceTo(targetDirection); //calculate distance between spaceship and point we want to move towards            
                 // console.log("distance: " + distance);
-                spaceship.lookAt(targetDirection); //"rotate" spaceship to face the point we'll move towards
-                spaceship.translateZ(distance); //move to the new position (Z because that is the "forward" direction according to how we built the spaceship)   
+                earth.lookAt(targetDirection); //"rotate" spaceship to face the point we'll move towards
+                earth.translateZ(distance); //move to the new position (Z because that is the "forward" direction according to how we built the spaceship)   
             }
         }
 
@@ -153,127 +135,7 @@
             if (animationId != null) {
                 cancelAnimationFrame(animationId);
                 console.log("Cancelled animation using " + animationId);
-                spaceship.rotation.set(0, 0, 0);
             }
-        }
-
-        function rotate() {
-            // Set the direction's angle, and the difference between it and our Object3D's current rotation
-            var angle = Math.atan2(directionVec.x, directionVec.z),
-                difference = angle - spaceship.rotation.y;
-            // If we're doing more than a 180°
-            if (Math.abs(difference) > Math.PI) {
-                // We proceed to a direct 360° rotation in the opposite way
-                if (difference > 0) {
-                    spaceship.rotation.y += 2 * Math.PI;
-                } else {
-                    spaceship.rotation.y -= 2 * Math.PI;
-                }
-                // And we set a new smarter (because shorter) difference
-                difference = angle - spaceship.rotation.y;
-                // In short : we make sure not to turn "left" to go "right"
-            }
-            // Now if we haven't reached our target angle
-            if (difference !== 0) {
-                // We slightly get closer to it
-                spaceship.rotation.y += difference / 4;
-            }
-        }
-
-        function move() {
-            // We update our Object3D's position from our "direction"
-            spaceship.position.x += directionVec.x * ((directionVec.z === 0) ? 2 : Math.sqrt(6));
-            spaceship.position.z += directionVec.z * ((directionVec.x === 0) ? 2 : Math.sqrt(6));
-        }
-
-        /*
-        TEXTURE FUNCTIONS
-        */
-
-        // adds texture coordinates to all the spaceship vertices
-        function addTextureCoords(geometry) {
-        if (!geometry instanceof THREE.Geometry) {
-            throw "not a THREE.Geometry: " + geometry;
-        }
-        // array of face descriptors
-        var UVs = [];
-        function faceCoords(as, at, bs, bt, cs, ct) {
-            UVs.push([new THREE.Vector2(as, at),
-            new THREE.Vector2(bs, bt),
-            new THREE.Vector2(cs, ct)]);
-        }
-
-        faceCoords(20/640, 314/640, 61/640, 314/640, 48/640, 355/640); // 032
-        faceCoords(20/640, 314/640, 61/640, 314/640, 48/640, 355/640); // 024
-        faceCoords(20/640, 314/640, 61/640, 314/640, 48/640, 355/640);  // 043
-        faceCoords(20/640, 314/640, 61/640, 314/640, 48/640, 355/640); // 421
-        faceCoords(20/640, 314/640, 61/640, 314/640, 48/640, 355/640); // 231
-        faceCoords(20/640, 314/640, 61/640, 314/640, 48/640, 355/640); // 134
-
-        // attach this to the geometry
-        geometry.faceVertexUvs = [UVs];
-        }
-
-        // createLightTarget() makes a directional light target at the given position, 
-        // making the spotlight look at that point
-        function createLightTarget(pos) {
-        let target = new THREE.Object3D();
-        target.position.set(pos.x ,pos.y ,pos.z);
-        return target;
-        }
-
-        /*
-        COMPOSITE OBJECTS FUNCTIONS
-        */
-
-        function buildSpaceship() {
-            var spaceship = new THREE.Object3D();
-            var wingPartA = new THREE.Geometry();
-            wingPartA.vertices.push(new THREE.Vector3(0, 0, 0)); // 0
-            wingPartA.vertices.push(new THREE.Vector3(0, 2, -8)); // 1
-            wingPartA.vertices.push(new THREE.Vector3(0, 2, -4)); // 2
-            wingPartA.vertices.push(new THREE.Vector3(2, 0, -4)); // 3
-            wingPartA.vertices.push(new THREE.Vector3(-2, 0, -4)); // 4
-            wingPartA.faces.push(new THREE.Face3(0, 3, 2)); // 0
-            wingPartA.faces.push(new THREE.Face3(0, 2, 4)); // 1
-            wingPartA.faces.push(new THREE.Face3(0, 4, 3)); // 2
-            wingPartA.faces.push(new THREE.Face3(4, 2, 1)); // 3
-            wingPartA.faces.push(new THREE.Face3(2, 3, 1)); // 4
-            wingPartA.faces.push(new THREE.Face3(1, 3, 4)); // 5
-            wingPartA.computeFaceNormals(); // Provide the geometry with normals.
-            addTextureCoords(wingPartA); // Map the textures to the wing.
-            
-            wingPartAMesh = new THREE.Mesh(wingPartA, new THREE.MeshBasicMaterial({color: 0xffffff, map: texture1}));
-            // wingPartAMesh = new THREE.Mesh(wingPartA, faceMaterials);
-            
-            wingPartAMesh.scale.set(10 * params.spaceshipSize, 10 * params.spaceshipSize, 10 * params.spaceshipSize);
-
-            cockpit = new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshPhongMaterial({color: 0xdddddd, transparent: true, opacity: .5}));
-            cockpit.scale.set(1, 1, 2);
-            cockpit.rotation.x += THREE.Math.degToRad(45);
-            cockpit.position.set(0, 10, -20);
-            
-            wingPartBMesh = wingPartAMesh.clone();
-            
-            wingPartBMesh.position.x = 25;
-            wingPartAMesh.position.x = -25;
-            wingPartAMesh.rotation.z = THREE.Math.degToRad(0);
-            wingPartBMesh.rotation.z = THREE.Math.degToRad(0);
-            spaceship.add(wingPartBMesh);
-            spaceship.add(wingPartAMesh);
-            spaceship.add(cockpit);
-
-            bulb = new THREE.Mesh(new THREE.ConeGeometry(10, 5, 32), new THREE.MeshBasicMaterial({color: new THREE.Color("red")}));
-            bulb.rotation.x = THREE.Math.degToRad(-45);
-            bulb.position.set(0, -20, -10);
-            spaceship.add(bulb);
-
-            body = new THREE.Mesh(new THREE.BoxGeometry(25, 25, 50), new THREE.MeshPhongMaterial({color: new THREE.Color("white")}));
-            body.position.set(0, 0, -25);
-            body.rotation.x += THREE.Math.degToRad(45);
-            spaceship.add(body);
-
-            return spaceship;
         }
 
         /*
@@ -327,16 +189,10 @@
         // This function disables and enables the visibility of the bezier curve.
         function redoBezier() { 
             if(params.disableBezier){
-                scene.remove(bezierCurve);
-                scene.remove(bezierCurve2);
-                scene.remove(bezierCurve3);
-                scene.remove(bezierCurve4);
+                bezierCurves.forEach(curve => {scene.remove(curve);});
             }
             else if(!params.disableBezier){
-                scene.add(bezierCurve);
-                scene.add(bezierCurve2);
-                scene.add(bezierCurve3);
-                scene.add(bezierCurve4);
+                bezierCurves.forEach(curve => {scene.add(curve);});
             }
         }
         
@@ -345,58 +201,43 @@
         let b = 0.55342686 * 200;
         let c = 0.99873585 * 200;
 
-        var controlPoints = [
+        var controlPointsArray = [
+        [
         [0, 0, a],
         [b, 0, c],
         [c, 0, b],
         [a, 0, 0]
-        ];
-
-        var controlPoints2 = [
+        ],
+        [
         [a, 0, 0],
         [c, 0, -b],
         [b, 0, -c],
         [0, 0, -a]
-        ];
-
-        var controlPoints3 = [
+        ],
+        [
         [0, 0, -a],
         [-b, 0, -c],
         [-c, 0, -b],
         [-a, 0, 0]
-        ];
-
-        var controlPoints4 = [
+        ],
+        [
         [-a, 0, 0],
         [-c, 0, b],
         [-b, 0, c],
         [0, 0, a]
+        ]
         ];
 
-        // create bezier curve using control points
-        var bezierCurveGeom = createBezierCurve(controlPoints, 200);
-        var bezierCurveMat = new THREE.LineBasicMaterial({
+        var bezierCurves = [];
+
+        for(let i = 0; i < 4; i++){
+            var bezierCurveGeom = createBezierCurve(controlPointsArray[i], 200);
+            var bezierCurveMat = new THREE.LineBasicMaterial({
             color: new THREE.Color("red")
-        });
-        var bezierCurve = new THREE.Line(bezierCurveGeom, bezierCurveMat);
-
-        var bezierCurveGeom2 = createBezierCurve(controlPoints2, 200);
-        var bezierCurveMat2 = new THREE.LineBasicMaterial({
-            color: new THREE.Color("blue")
-        });
-        var bezierCurve2 = new THREE.Line(bezierCurveGeom2, bezierCurveMat2);
-
-        var bezierCurveGeom3 = createBezierCurve(controlPoints3, 200);
-        var bezierCurveMat3 = new THREE.LineBasicMaterial({
-            color: new THREE.Color("green")
-        });
-        var bezierCurve3 = new THREE.Line(bezierCurveGeom3, bezierCurveMat3);
-
-        var bezierCurveGeom4 = createBezierCurve(controlPoints4, 200);
-        var bezierCurveMat4 = new THREE.LineBasicMaterial({
-            color: new THREE.Color("pink")
-        });
-        var bezierCurve4 = new THREE.Line(bezierCurveGeom4, bezierCurveMat4);
+            });
+            var bezierCurve = new THREE.Line(bezierCurveGeom, bezierCurveMat);
+            bezierCurves.push(bezierCurve);
+        }
 
     </script>
 
@@ -424,37 +265,41 @@
         // Set up a camera for the scene
         var camera = setupCamera(cameraParams);
 
-        // build the scene
-        // add ambient light source
-        var ambLight = new THREE.AmbientLight(new THREE.Color("white"), .5);
-        scene.add(ambLight);
+        // build the scene and add an ambient light source
+        // var ambLight = new THREE.AmbientLight(new THREE.Color("white"), .5);
+        // scene.add(ambLight);
 
         // create a loader to make textures from our images
         var loader = new THREE.TextureLoader();
-        
-        var texture1 = loader.load("spaceship.png", render);
-        texture1.needsUpdate = true;
 
         scene.add(camera);
         setupCameraControls(); //set up camera controls so we can use mouse to pan around scene
 
         scene.add(ah); //add axishelper to scene -- created as a global variable
         ah.visible = false; //toggle off to start, see keypress event listener
-        
-        spaceship = buildSpaceship();
-        scene.add(spaceship);
 
-        spaceship.lookAt(new THREE.Vector3(path[0])); //look at first point in bezier curve path
-        startingPosition.position.copy(spaceship.position); //copy starting position to reset animation
+        var planets = [new THREE.Object3D(), new THREE.Object3D()];
+        var textures = ['sun.png', 'earth.png', ];
 
-        // add curve to scene as a "sanity check"
-        scene.add(bezierCurve);
-        scene.add(bezierCurve2);
-        scene.add(bezierCurve3);
-        scene.add(bezierCurve4);
+        var earth = new THREE.Object3D();
+        earth.position.copy(path[0]);
+        scene.add(earth);
+        startingPosition.position.copy(earth.position); //copy starting position to reset animation
+
+        // planets.forEach(planet => {});
+
+        loader.load( 'earth.png', function ( texture ) {
+            var geometry = new THREE.SphereGeometry( 20, 20, 20 );
+            var material = new THREE.MeshLambertMaterial( { map: texture, overdraw: 0.5 , color:0xFFFFFF} );
+            var mesh = new THREE.Mesh( geometry, material );
+            earth.add( mesh );
+        });
+
+        // add curves to scene as a "sanity check"
+        bezierCurves.forEach(curve => {scene.add(curve)});
 
         var sunObj = new THREE.Object3D();
-        var sunLight = new THREE.PointLight(0xFFBF00, 1, 0);
+        var sunLight = new THREE.PointLight(0xFFFFFF, 1, 0); // 0xFFBF00
         sunLight.position.set(sunObj.position.x, sunObj.position.y, sunObj.position.z);
         sunObj.add(sunLight);
         scene.add(sunObj);
@@ -500,17 +345,15 @@
                     ah.visible = !ah.visible;
                     break;
                 case "g":
-                    animate(); // animate the spaceship
+                    animate(); // animate the planets
                     break;
                 case " ":
                     stopAnimation();
                     break;
                 case "0":
-                    //move the spaceship back to the starting position (variable set at the start)
-                    spaceship.position.set(startingPosition.position.x, startingPosition.position.y, startingPosition.position.z);
-                    //Take note of the lookAt function, this rotates the spaceship to look at the origin.
-                    //How is this be helpful? Is this where we want to orient the spaceship? What happens if we don't do this?
-                    spaceship.lookAt(new THREE.Vector3(0, 0, 0));
+                    //move the planets back to the starting position (variable set at the start)
+                    earth.position.set(startingPosition.position.x, startingPosition.position.y, startingPosition.position.z);
+                    earth.lookAt(new THREE.Vector3(0, 0, 0));
                     t = 0; //reset to start over
                     break;
                 default:
@@ -590,14 +433,15 @@
         }
 
         var gui = new dat.GUI();
-        gui.add(params, 'spaceshipSize', .1, 2).onChange(redoSpaceship);
-        gui.add(params, 'followSpaceship').onChange(redoSpaceship);
         gui.add(params, 'disableBezier').onChange(redoBezier);
         
         document.addEventListener('keydown', onKeyDown, false);
         document.addEventListener('keyup', onKeyUp, false);
 
-        // scene.background = loader.load("space.png", render); // Make the background a cool space image!
+        scene.background = loader.load("space.png", render); // Make the background a cool space image!
+
+        const axesHelper = new THREE.AxesHelper( 5 );
+        scene.add( axesHelper );
 
         render(); // We make sure to call render here and(hopefully) nowhere else, since it recursively calls itself for dynamic movement.
     </script>
